@@ -119,8 +119,8 @@ for i = 1:size(fileList,1)
     try
         A_dFoF = curLoad.A_dFoF;
         A_all = cat(3, A_all, A_dFoF);
-        disp(['Loaded ' num2str(i) 'th matrix.'])
         clear A_dFoF
+        disp(['Finish loading matrix #' num2str(i)])
     catch
         disp(['This file ' fileList(i).name ' does not contain movie matrix!'])
     end
@@ -826,19 +826,20 @@ function Plot_correlation_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 if ~isempty(handles.Plot_correlation.UserData)
+    %Construct plotCorrObj to transfer data to PlotCorrMap GUI
     curRoi = handles.Plot_correlation.UserData.curROI;
     plotCorrObj.curPos = round(curRoi.Position);
     plotCorrObj.curMovie = handles.output.UserData.curMovie;
+    plotCorrObj.reg_flag = handles.regress_flag.Value;
+    handles.Plot_correlation.UserData.plotCorrObj = plotCorrObj;
     
+    %Execute PlotCorrMap GUI
+    disp('Generating the correlation map...')
+    PlotCorrMap('hObject');
 else
     msgbox('Can not detect current roi object!', 'Error')
 end
 
-plotCorrObj.reg_flag = handles.regress_flag.Value;
-handles.Plot_correlation.UserData.plotCorrObj = plotCorrObj;
-
-disp('Generating the correlation map...')
-PlotCorrMap('hObject');
 
 
 % --- Executes on button press in regress_flag.

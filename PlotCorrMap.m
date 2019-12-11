@@ -22,7 +22,7 @@ function varargout = PlotCorrMap(varargin)
 
 % Edit the above text to modify the response to help PlotCorrMap
 
-% Last Modified by GUIDE v2.5 26-Nov-2019 15:29:37
+% Last Modified by GUIDE v2.5 10-Dec-2019 23:29:01
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -80,6 +80,12 @@ corrM = plotCorrelationMap(plotCorrObj, reg_flag, handles);
 avg_seed_corr = calculateSurrounding(curPos, corrM);
 handles.edit_seed.String = num2str(avg_seed_corr);
 handles.Save_data.UserData.avg_seed_corr = avg_seed_corr;
+
+%Initiate Save_data.UserData
+handles.Save_data.UserData.avg_rec_corr = [];
+handles.Save_data.UserData.avg_hand_corr = [];
+handles.Save_data.UserData.rec_Position = [];
+handles.Save_data.UserData.hand_Position = [];
 
 %Save the correlation matrix
 handles.output.UserData.corrM = corrM;
@@ -157,6 +163,7 @@ corrM = handles.output.UserData.corrM;
 avg_hand_corr = calculateSurrounding(curPos, corrM);
 handles.edit_hand.String = num2str(avg_hand_corr);
 handles.Save_data.UserData.avg_hand_corr = avg_hand_corr;
+handles.Save_data.UserData.hand_Position = curPos;
 
 %Listening to the moving events
 addlistener(roi, 'ROIMoved', @(src,evt)movedCallback(src,evt,handles));
@@ -171,6 +178,7 @@ corrM = handles.output.UserData.corrM;
 avg_hand_corr = calculateSurrounding(curPos, corrM);
 handles.edit_hand.String = num2str(avg_hand_corr);
 handles.Save_data.UserData.avg_hand_corr = avg_hand_corr;
+handles.Save_data.UserData.hand_Position = curPos;
 
 
 % --- Outputs from this function are returned to the command line.
@@ -258,14 +266,20 @@ function Save_data_Callback(hObject, eventdata, handles)
 % hObject    handle to Save_data (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
-plotCorrObj = handles.output.UserData.plotCorrObj;
-curPos = plotCorrObj.curPos;
-saveas(handles.CorrMap, ['roi', num2str(curPos(1)) '_',  num2str(curPos(2)),'.png'])  
-avg_seed_corr = handles.Save_data.UserData.avg_seed_corr;
-avg_rec_corr = handles.Save_data.UserData.avg_rec_corr;
-avg_hand_corr = handles.Save_data.UserData.avg_hand_corr;
-save(['roi', num2str(curPos(1)) '_',  num2str(curPos(2)),'.mat'], 'avg_seed_corr', 'avg_rec_corr', 'avg_hand_corr');
+try
+    plotCorrObj = handles.output.UserData.plotCorrObj;
+    curPos = plotCorrObj.curPos;
+    saveas(handles.CorrMap, ['roi', num2str(curPos(1)) '_',  num2str(curPos(2)),'.png'])  
+    avg_seed_corr = handles.Save_data.UserData.avg_seed_corr;
+    avg_rec_corr = handles.Save_data.UserData.avg_rec_corr;
+    avg_hand_corr = handles.Save_data.UserData.avg_hand_corr;
+    rec_Position = handles.Save_data.UserData.rec_Position;
+    hand_Position = handles.Save_data.UserData.hand_Position;
+    save(['roi', num2str(curPos(1)) '_',  num2str(curPos(2)),'.mat'],...
+        'avg_seed_corr', 'avg_rec_corr', 'avg_hand_corr', 'curPos', 'rec_Position', 'hand_Position');
+catch
+    warning('Variables not defined!')
+end
 
 
 % --- Executes on button press in Draw_region.
@@ -294,8 +308,16 @@ try
     avg_rec_corr = calculateSurrounding([x2 y2], corrM_masked);
     handles.edit_rec.String = num2str(avg_rec_corr);
     handles.Save_data.UserData.avg_rec_corr = avg_rec_corr;
+    handles.Save_data.UserData.rec_Position = [x2, y2];
     handles.Status.Visible = 'On';
     handles.Status.String = 'Maximum found!';
 catch
     msgbox('Please define a roi region first!', 'Error');
 end
+
+
+% --- Executes during object creation, after setting all properties.
+function Save_data_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Save_data (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
