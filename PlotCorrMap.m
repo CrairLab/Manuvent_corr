@@ -119,6 +119,7 @@ function corrM = plotCorrelationMap(plotCorrObj, reg_flag, handles)
     corrM = reshape(corrM, sz(1:2));
     
     %Plot the correlation map
+    hold off;
     im = imagesc(handles.CorrMap, corrM); colormap jet; colorbar; axis image
     caxis([-0.2, 1]); title(['roi:', num2str(curPos)]);
     
