@@ -268,15 +268,19 @@ function Save_data_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 try
     plotCorrObj = handles.output.UserData.plotCorrObj;
+    reg_flag = plotCorrObj.reg_flag
     curPos = plotCorrObj.curPos;
-    saveas(handles.CorrMap, ['roi', num2str(curPos(1)) '_',  num2str(curPos(2)),'.png'])  
+    saveas(handles.CorrMap, ['roi_', num2str(reg_flag), '_',...
+        num2str(curPos(1)) '_',  num2str(curPos(2)),'.png'])  
     avg_seed_corr = handles.Save_data.UserData.avg_seed_corr;
     avg_rec_corr = handles.Save_data.UserData.avg_rec_corr;
     avg_hand_corr = handles.Save_data.UserData.avg_hand_corr;
     rec_Position = handles.Save_data.UserData.rec_Position;
     hand_Position = handles.Save_data.UserData.hand_Position;
-    save(['roi', num2str(curPos(1)) '_',  num2str(curPos(2)),'.mat'],...
-        'avg_seed_corr', 'avg_rec_corr', 'avg_hand_corr', 'curPos', 'rec_Position', 'hand_Position');
+    save(['roi_', num2str(reg_flag), '_',...
+        num2str(curPos(1)) '_',  num2str(curPos(2)),'.mat'],...
+        'avg_seed_corr', 'avg_rec_corr', 'avg_hand_corr', 'curPos',...
+        'rec_Position', 'hand_Position');
 catch
     warning('Variables not defined!')
 end
