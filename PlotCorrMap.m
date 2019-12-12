@@ -268,7 +268,7 @@ function Save_data_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 try
     plotCorrObj = handles.output.UserData.plotCorrObj;
-    reg_flag = plotCorrObj.reg_flag
+    reg_flag = plotCorrObj.reg_flag;
     curPos = plotCorrObj.curPos;
     saveas(handles.CorrMap, ['roi_', num2str(reg_flag), '_',...
         num2str(curPos(1)) '_',  num2str(curPos(2)),'.png'])  
