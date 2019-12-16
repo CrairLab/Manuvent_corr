@@ -108,25 +108,11 @@ set(handles.Text_load, 'Visible', 'On')
 set(handles.Text_load, 'String', 'Loading...')
 set(handles.Text_playing, 'Visible', 'off')
 
-%Choose the folder where filtered matriices are saved
-selpath = uigetdir('Please choose the folder where filtered matrices are!');
-cd(selpath);
-fileList = dir('*filtered*');
-A_all = [];
-
-for i = 1:size(fileList,1)
-    curLoad = load(fileList(i).name);
-    try
-        A_dFoF = curLoad.A_dFoF;
-        A_all = cat(3, A_all, A_dFoF);
-        clear A_dFoF
-        disp(['Finish loading matrix #' num2str(i)])
-    catch
-        disp(['This file ' fileList(i).name ' does not contain movie matrix!'])
-    end
-end
-
-handles.Load_movie.UserData.filename = fileList(1).name;
+%Load the dF/F .mat movie
+[file,path]=uigetfile('*.mat','Please load the movie (mat) file!');
+load(fullfile(path,file));
+%hObject.UserData.filename = file;
+handles.Load_movie.UserData.filename = file;
 
 %Clean index information from the previous movie
 handles.play.UserData = [];
@@ -135,13 +121,23 @@ handles.Frame.String = '1';
 
 %Store the movie into a variable curMovie
 try
-    curMovie = A_all;
-    set(handles.Text_load, 'String', 'Finished!')
- 
+    vList = whos; 
+    for i = 1:size(vList,1)
+        %Search for 3D matrix
+        if length(vList(i).size) == 3 
+            curMovie = eval(vList(i).name);
+            %hObject.UserData = curMovie;
+            set(handles.Text_load, 'String', 'Finished!')
+            break
+        end
+    end  
 catch
     set(handles.Text_load, 'String', 'Error!')
-    warning('Can not load the dF over F movie!')        
+    msgbox('Can not load the dF over F movie!','Error!')
+    return
 end
+
+curMovie(curMovie == 0) = nan;
 
 %Save the movie and its size as an object to the UserData of the GUI
 sz = size(curMovie);
@@ -831,6 +827,7 @@ if ~isempty(handles.Plot_correlation.UserData)
     plotCorrObj.curPos = round(curRoi.Position);
     plotCorrObj.curMovie = handles.output.UserData.curMovie;
     plotCorrObj.reg_flag = handles.regress_flag.Value;
+    plotCorrObj.filename = handles.Load_movie.UserData.filename;
     handles.Plot_correlation.UserData.plotCorrObj = plotCorrObj;
     
     %Execute PlotCorrMap GUI

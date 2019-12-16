@@ -22,7 +22,7 @@ function varargout = PlotCorrMap(varargin)
 
 % Edit the above text to modify the response to help PlotCorrMap
 
-% Last Modified by GUIDE v2.5 10-Dec-2019 23:29:01
+% Last Modified by GUIDE v2.5 16-Dec-2019 10:48:41
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -91,6 +91,14 @@ handles.Save_data.UserData.hand_Position = [];
 handles.output.UserData.corrM = corrM;
 handles.output.UserData.plotCorrObj = plotCorrObj;
 
+%Set default percentile value
+handles.Corr_percentile.UserData.curValue = 0.99;
+disp('Default percentile for highly correlated region = 99%.')
+
+%Set the status text
+handles.Status.Visible = 'On';
+handles.Status.String = plotCorrObj.filename;
+
 % UIWAIT makes PlotCorrMap wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
 
@@ -120,17 +128,20 @@ function corrM = plotCorrelationMap(plotCorrObj, reg_flag, handles)
     
     %Plot the correlation map
     hold off;
-    im = imagesc(handles.CorrMap, corrM); colormap jet; colorbar; axis image
-    caxis([-0.2, 1]); title(['roi:', num2str(curPos)]);
+    im = imagesc(handles.CorrMap, corrM); colormap jet;
+    colorbar(handles.CorrMap); 
+    axis(handles.CorrMap, 'image');
+    caxis(handles.CorrMap,[-0.2, 1]); 
+    title(handles.CorrMap,['roi:', num2str(curPos)]);
     
     set(im, 'ButtonDownFcn', {@markEvents, handles});
 
-    hold on
+    hold(handles.CorrMap, 'on')
     
     %Label the seed
     x1 = curPos(1);
     y1 = curPos(2);
-    fill([x1-2,x1-2,x1+2,x1+2],[y1-2,y1+2,y1+2,y1-2], 'y')
+    fill(handles.CorrMap,[x1-2,x1-2,x1+2,x1+2],[y1-2,y1+2,y1+2,y1-2], 'y')
 
     
 function [y2 ,x2] = findReccomandMax(corrM)
@@ -326,3 +337,118 @@ function Save_data_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to Save_data (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
+
+
+% --- Executes on button press in Corr_region.
+function Corr_region_Callback(hObject, eventdata, handles)
+% hObject    handle to Corr_region (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+try
+    %Renew the map 
+    plotCorrObj = handles.output.UserData.plotCorrObj;
+    reg_flag = plotCorrObj.reg_flag;
+    plotCorrelationMap(plotCorrObj, reg_flag, handles);
+    
+    %Plot the highly correlated region
+    curThreshold = handles.Corr_percentile.UserData.curValue;
+    corrM = handles.output.UserData.corrM;
+    [x,y] = find(corrM>curThreshold);
+    Correlated_region.x = x;
+    Correlated_region.y = y;
+    hObject.UserData.Correlated_region = Correlated_region;
+    plot(handles.CorrMap, y,x,'w*')  
+catch
+    msgbox('Can not get the correlated region!', 'Error!')
+    return
+end
+
+
+function Corr_percentile_Callback(hObject, eventdata, handles)
+% hObject    handle to Corr_percentile (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of Corr_percentile as text
+%        str2double(get(hObject,'String')) returns contents of Corr_percentile as a double
+try
+    %Get and calculate the percentile
+    curPrct = str2double(get(hObject, 'String'));
+    handles.Corr_percentile.UserData.curValue = curPrct/100;
+    disp(['Plot region with correlation > ' num2str(curPrct) '%'])
+catch
+    msgbox('Please input a number btw 0-100!', 'Error!')
+end
+
+% --- Executes during object creation, after setting all properties.
+function Corr_percentile_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Corr_percentile (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in Plot_avg.
+function Plot_avg_Callback(hObject, eventdata, handles)
+% hObject    handle to Plot_avg (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+try
+    %Get required data
+    curThreshold = handles.Corr_percentile.UserData.curValue;
+    corrM = handles.output.UserData.corrM;
+    plotCorrObj = handles.output.UserData.plotCorrObj;
+    curMovie = plotCorrObj.curMovie;
+    
+    %Reshape matrices
+    sz = size(corrM);
+    corrM = reshape(corrM, [sz(1)*sz(2),1]);
+    curMovie = reshape(curMovie, [sz(1)*sz(2), size(curMovie,3)]);
+    
+    %Calculate the averaged trace
+    Avg_trace = nanmean(curMovie(corrM>curThreshold,:),1);
+    hObject.UserData.Avg_trace = Avg_trace;
+    
+    %Plot the trace
+    plot(handles.Trace, Avg_trace, 'LineWidth', 2);
+    max_time = find(Avg_trace == max(Avg_trace));
+    hold(handles.Trace, 'on');
+    plot(max_time, max(Avg_trace), 'r*')
+    Duration = length(Avg_trace);
+    plot(1:Duration, 0.03*ones(Duration,1), 'r')
+    
+    %Save the values to UserData
+    hObject.UserData.max_time = max_time;
+    hObject.UserData.max_value = max(Avg_trace);
+    
+catch
+    msgbox('Can not plot the averaged trace!', 'Error!')
+    return
+end
+
+
+% --- Executes on button press in Save_trace.
+function Save_trace_Callback(hObject, eventdata, handles)
+% hObject    handle to Save_trace (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+curThreshold = handles.Corr_percentile.UserData.curValue;
+Correlated_region = handles.Corr_region.UserData.Correlated_region;
+Avg_trace = handles.Plot_avg.UserData.Avg_trace;
+max_time = handles.Plot_avg.UserData.max_time;
+max_value = handles.Plot_avg.UserData.max_value;
+plotCorrObj = handles.output.UserData.plotCorrObj;
+filename = plotCorrObj.filename;
+
+savename = [filename '_averaged_trace_' num2str(curThreshold)];
+save([savename '.mat'], 'curThreshold', 'Correlated_region', 'Avg_trace', 'max_time', 'max_value')
+saveas(handles.Trace, [savename '.png'])  
