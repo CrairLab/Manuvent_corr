@@ -92,8 +92,9 @@ handles.output.UserData.corrM = corrM;
 handles.output.UserData.plotCorrObj = plotCorrObj;
 
 %Set default percentile value
-handles.Corr_percentile.UserData.curValue = 0.99;
-disp('Default percentile for highly correlated region = 99%.')
+handles.Corr_percentile.UserData.curValue = 0.997;
+handles.Corr_percentile.String = num2str(99.7);
+disp('Default percentile for highly correlated region = 99.7%.')
 
 %Set the status text
 handles.Status.Visible = 'On';
@@ -354,7 +355,7 @@ try
     %Plot the highly correlated region
     curThreshold = handles.Corr_percentile.UserData.curValue;
     corrM = handles.output.UserData.corrM;
-    [x,y] = find(corrM>curThreshold);
+    [x,y] = find(corrM>=curThreshold);
     Correlated_region.x = x;
     Correlated_region.y = y;
     hObject.UserData.Correlated_region = Correlated_region;
@@ -414,7 +415,7 @@ try
     curMovie = reshape(curMovie, [sz(1)*sz(2), size(curMovie,3)]);
     
     %Calculate the averaged trace
-    Avg_trace = nanmean(curMovie(corrM>curThreshold,:),1);
+    Avg_trace = nanmean(curMovie(corrM>=curThreshold,:),1);
     hObject.UserData.Avg_trace = Avg_trace;
     
     %Plot the trace
@@ -422,6 +423,7 @@ try
     max_time = find(Avg_trace == max(Avg_trace));
     hold(handles.Trace, 'on');
     plot(max_time, max(Avg_trace), 'r*')
+    plot(10:14, Avg_trace(10:14), 'g', 'LineWidth', 2)
     Duration = length(Avg_trace);
     plot(1:Duration, 0.03*ones(Duration,1), 'r')
     
@@ -448,6 +450,12 @@ max_time = handles.Plot_avg.UserData.max_time;
 max_value = handles.Plot_avg.UserData.max_value;
 plotCorrObj = handles.output.UserData.plotCorrObj;
 filename = plotCorrObj.filename;
+
+%Locate specific tag
+t = strfind(filename,'AveragedMatrix');
+if ~isempty(t)
+    filename = filename(t+15:end);
+end
 
 savename = [filename '_averaged_trace_' num2str(curThreshold)];
 save([savename '.mat'], 'curThreshold', 'Correlated_region', 'Avg_trace', 'max_time', 'max_value')
